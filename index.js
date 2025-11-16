@@ -5,7 +5,7 @@ const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const app = express();
 const port = process.env.PORT || 4000;
 
-console.log(process.env);
+//console.log(process.env);
 
 // middleware
 app.use(cors());
@@ -32,12 +32,24 @@ async function run () {
         await client.connect();
         const db = client.db('homehero_db')
         const serviceCollection = db.collection('services');
+        const bookingCollection = db.collection('booking')
         const usersCollection = db.collection('users')
+      
+        // users  
+        app.post('/users', async (req, res) => {
+            const newUser = req.body;
+            const email = req.body.email;
+            const query = { email: email }
+            const existingUser = await usersCollection.findOne(query);
 
-        // users
-        // app.post('/users', async(req, res ) => {
-        //   const 
-        // })
+            if (existingUser) {
+                res.send({ message: 'user already added. not need to insart again' })
+            }
+            else {
+                const result = await usersCollection.insertOne(newUser);
+                res.send(result);
+            }
+        })
 
         // all services get
         app.get('/services', async (req, res) => {
@@ -53,6 +65,7 @@ async function run () {
           const result = await cursor.toArray();
           res.send(result)
         })
+        
            // home six service
         app.get('/services-home', async (req, res) => {
           
@@ -124,6 +137,36 @@ async function run () {
           const result = await serviceCollection.deleteOne(query);
           res.send(result);
         })
+        
+
+         // booking section
+         app.post('/bookings', async (req, res) => {
+         const booking = req.body;
+         const result = await bookingCollection.insertOne(booking);
+         res.send(result);
+        });
+
+        app.get('/bookings', async (req, res) => {
+            const email = req.query.email;
+           // const query = {};
+            // if (email) {
+            //     query.email = email;
+            //     if(email !== req.token_email){
+            //         return res.status(403).send({message: 'forbiden access'})
+            //     }
+            // }
+
+            const cursor = bookingCollection.find({userEmail: email})
+            const result = await cursor.toArray();
+            res.send(result);
+        })
+
+        app.delete('/bookings/:id', async (req, res) => {
+        const id = req.params.id;
+        const result = await bookingCollection.deleteOne({ _id: new ObjectId(id) });
+        res.send(result);
+        });
+
 
 
         await client.db("admin").command({ ping: 1 });
