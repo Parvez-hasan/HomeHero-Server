@@ -29,7 +29,7 @@ app.get('/', (req, res) => {
 
 async function run () {
     try{
-        await client.connect();
+       // await client.connect();
         const db = client.db('homehero_db')
         const serviceCollection = db.collection('services');
         const bookingCollection = db.collection('booking')
@@ -51,15 +51,26 @@ async function run () {
             }
         })
 
-        // all services get
+        // all services get and price filter 
         app.get('/services', async (req, res) => {
           
-          console.log(req.query);
-          const email = req.query.email;
+         // console.log(req.query);
+          const  { min, max, email }= req.query;
+
           const query = {}
           if(email) {
             query.email = email;
           }
+console.log(min,max);
+
+           if (min && max) {
+                query.price = { 
+                $gte: parseInt(min), 
+                $lte: parseInt(max) 
+                 };
+             }
+
+               console.log("Final Filter:", query);
 
           const cursor = serviceCollection.find(query);
           const result = await cursor.toArray();
@@ -148,13 +159,6 @@ async function run () {
 
         app.get('/bookings', async (req, res) => {
             const email = req.query.email;
-           // const query = {};
-            // if (email) {
-            //     query.email = email;
-            //     if(email !== req.token_email){
-            //         return res.status(403).send({message: 'forbiden access'})
-            //     }
-            // }
 
             const cursor = bookingCollection.find({userEmail: email})
             const result = await cursor.toArray();
@@ -167,7 +171,27 @@ async function run () {
         res.send(result);
         });
 
+   // price filter
+       app.get("/services", async (req, res) => {
+       const { min, max } = req.query;
 
+       const filter = {};
+
+       if (min && max) {
+       filter.price = {
+       $gte: Number(min),
+       $lte: Number(max)
+         };
+       }
+         console.log(filter);
+
+      const services = await serviceCollection.find(filter).toArray();
+      console.log(services);
+      res.send(services);
+      });
+
+      
+      
 
        // await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
